@@ -1,45 +1,9 @@
 /**
  * @license
  * AdaptiQ Client SDK
- * 
- * Reusable AI layer client for Member 1 / Frontend Team.
- * Connects directly to the secure server-side Gemini endpoints.
- * 
- * Example usage in React components:
- * 
- * ```ts
- * import { generateQuestions, analyzeMistake, explainTopic, tutor } from '@/src/services/adaptiqClient';
- * 
- * // 1. Generate Questions
- * const qData = await generateQuestions({
- *   subject: 'Computer Science',
- *   topic: 'Java Inheritance',
- *   difficulty: 'intermediate',
- *   count: 3
- * });
- * console.log(qData.questions);
- * 
- * // 2. Analyze Mistake
- * const analysis = await analyzeMistake({
- *   question: 'Which keyword prevents a method from being overridden in Java?',
- *   studentAnswer: 'static',
- *   correctAnswer: 'final',
- *   topic: 'Java Inheritance'
- * });
- * console.log(analysis.mistakeType, analysis.explanation, analysis.recommendation);
- * 
- * // 3. Explain Topic
- * const topicExplanation = await explainTopic({
- *   topic: 'Java Inheritance and Polymorphism',
- *   studentLevel: 'intermediate'
- * });
- * 
- * // 4. Socratic Tutor
- * const tutorResponse = await tutor({
- *   question: 'Why can dog not access private fields of Animal?',
- *   context: 'Java inheritance modifiers'
- * });
- * ```
+ *
+ * Reusable AI layer client for Learnova AI.
+ * Connects to the deployed AdaptiQ backend.
  */
 
 import type {
@@ -55,7 +19,22 @@ import type {
   TestResultItem,
 } from '../types/adaptiq';
 
-async function postJson<T>(endpoint: string, payload: unknown): Promise<T> {
+// Deployed AdaptiQ backend URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_URL) {
+  console.warn(
+    'NEXT_PUBLIC_API_URL is not configured. Please add it to .env.local.'
+  );
+}
+
+/**
+ * Generic POST request helper
+ */
+async function postJson<T>(
+  endpoint: string,
+  payload: unknown
+): Promise<T> {
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -67,65 +46,85 @@ async function postJson<T>(endpoint: string, payload: unknown): Promise<T> {
   const json: ApiResponse<T> = await response.json();
 
   if (!response.ok || !json.success || !json.data) {
-    throw new Error(json.error || `Request failed with status ${response.status}`);
+    throw new Error(
+      json.error || `Request failed with status ${response.status}`
+    );
   }
 
   return json.data;
 }
 
 /**
- * 1. Generates structured multiple-choice questions for any subject and topic.
+ * 1. Generate AI Questions
  */
 export async function generateQuestions(
   params: GenerateQuestionsParams
 ): Promise<GenerateQuestionsResult> {
-  return postJson<GenerateQuestionsResult>('/api/ai/generate-questions', params);
+  return postJson<GenerateQuestionsResult>(
+    `${API_URL}/api/ai/generate-questions`,
+    params
+  );
 }
 
 /**
- * 2. Classifies student errors (Conceptual, Calculation, Careless, Question misunderstanding, Memory/recall)
- * and provides explanations and recommendations.
+ * 2. Analyze Student Mistake
  */
 export async function analyzeMistake(
   params: AnalyzeMistakeParams
 ): Promise<AnalyzeMistakeResult> {
-  return postJson<AnalyzeMistakeResult>('/api/ai/analyze-mistake', params);
+  return postJson<AnalyzeMistakeResult>(
+    `${API_URL}/api/ai/analyze-mistake`,
+    params
+  );
 }
 
 /**
- * 3. Breaks down any topic for a given student level into simple explanations,
- * code/real examples, key points, and practice questions.
+ * 3. Explain Topic
  */
 export async function explainTopic(
   params: ExplainTopicParams
 ): Promise<ExplainTopicResult> {
-  return postJson<ExplainTopicResult>('/api/ai/explain-topic', params);
+  return postJson<ExplainTopicResult>(
+    `${API_URL}/api/ai/explain-topic`,
+    params
+  );
 }
 
 /**
- * 4. Progressive Socratic Tutor providing Hint → Simple Explanation → Example → Practice Question.
+ * 4. AI Tutor
  */
-export async function tutor(params: TutorParams): Promise<TutorResult> {
-  return postJson<TutorResult>('/api/ai/tutor', params);
+export async function tutor(
+  params: TutorParams
+): Promise<TutorResult> {
+  return postJson<TutorResult>(
+    `${API_URL}/api/ai/tutor`,
+    params
+  );
 }
 
 /**
- * Executes server-side Java/Inheritance end-to-end verification suite.
+ * 5. Run AI backend tests
  */
 export async function runJavaInheritanceTests(): Promise<{
   success: boolean;
   allPassed: boolean;
   results: TestResultItem[];
 }> {
-  const response = await fetch('/api/ai/run-tests', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const response = await fetch(
+    `${API_URL}/api/ai/run-tests`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
   return response.json();
 }
 
 /**
- * Checks AI Service and Gemini API connectivity.
+ * 6. Check AI backend health
  */
 export async function checkAiHealth(): Promise<{
   status: string;
@@ -133,6 +132,9 @@ export async function checkAiHealth(): Promise<{
   geminiConfigured: boolean;
   timestamp: string;
 }> {
-  const res = await fetch('/api/ai/health');
-  return res.json();
+  const response = await fetch(
+    `${API_URL}/api/ai/health`
+  );
+
+  return response.json();
 }

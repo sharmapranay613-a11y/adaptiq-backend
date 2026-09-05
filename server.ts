@@ -30,6 +30,7 @@ const PORT = Number(process.env.PORT) || 3001
 const allowedOrigins = [
   'http://localhost:3000',
   'https://adaptiq-ashen.vercel.app',
+  'https://learnova-ai-tau.vercel.app',
 ]
 
 app.use(
